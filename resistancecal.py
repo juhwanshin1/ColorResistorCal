@@ -45,10 +45,12 @@ def resistor_value():
     band_count = len(colors)
     
     try:
+        # 색상을 입력받을 때 색상에 맞는 스타일 적용
         colored_input = Text()
         for color in colors:
             colored_input.append(f"{color} ", style=rich_colors.get(color, "white"))
-        console.print(f"입력된 색상: {colored_input}")
+        
+        console.print(f"입력된 색상: {colored_input}")  # 색상 적용된 텍스트 출력
         
         if band_count == 4:
             value = (color_codes[colors[0]] * 10 + color_codes[colors[1]]) * multiplier_codes[colors[2]]
@@ -58,17 +60,21 @@ def resistor_value():
             tolerance = tolerance_codes.get(colors[4], None)
         
         formatted_value, unit = format_resistance(value)
+        
+        # 이후 출력은 기본 색상으로 출력
         if tolerance is not None:
-            console.print(f"저항값: [bold cyan]{formatted_value}[/bold cyan] ±{tolerance}%")
+            console.print(f"저항값: {formatted_value} ±{tolerance}%", style="white")
         else:
-            console.print(f"저항값: [bold cyan]{formatted_value}[/bold cyan]")
+            console.print(f"저항값: {formatted_value}", style="white")
         
         measured_value = float(input(f"실제 측정된 저항값을 입력하세요 ({unit} 단위): "))
         measured_value *= 1_000_000 if unit == "MΩ" else 1_000 if unit == "kΩ" else 1
         
         error = calculate_tolerance(value, measured_value)
-        console.print(f"측정값: [bold green]{format_resistance(measured_value)[0]}[/bold green]")
-        console.print(f"오차율: [bold red]{error:.2f}%[/bold red]")
+        
+        # 측정값과 오차율도 기본 색상으로 출력
+        console.print(f"측정값: {format_resistance(measured_value)[0]}", style="white")
+        console.print(f"오차율: {error:.2f}%", style="white")
         
         return "계산 완료"
         
