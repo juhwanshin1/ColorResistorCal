@@ -1,14 +1,17 @@
-import colorama
-from colorama import Fore, Style
+from rich.console import Console
+from rich.text import Text
 
-colorama.init(autoreset=True)
+console = Console()
 
 def format_resistance(value):
     if value >= 1_000_000:
-        return f"{value / 1_000_000}MΩ"
+        return f"{value / 1_000_000}MΩ", "MΩ"
     elif value >= 1_000:
-        return f"{value / 1_000}kΩ"
-    return f"{value}Ω"
+        return f"{value / 1_000}kΩ", "kΩ"
+    return f"{value}Ω", "Ω"
+
+def calculate_tolerance(nominal, measured):
+    return abs((measured - nominal) / nominal * 100)
 
 def resistor_value():
     color_codes = {
@@ -24,31 +27,28 @@ def resistor_value():
         "갈색": 1, "빨강": 2, "초록": 0.5, "파랑": 0.25,
         "보라": 0.1, "회색": 0.05, "금": 5, "은": 10
     }
-    color_styles = {
-        "검정": Fore.BLACK, "갈색": Fore.LIGHTBLACK_EX, "빨강": Fore.RED, "주황": Fore.LIGHTRED_EX, 
-        "노랑": Fore.YELLOW, "초록": Fore.GREEN, "파랑": Fore.BLUE, "보라": Fore.MAGENTA, 
-        "회색": Fore.LIGHTWHITE_EX, "흰색": Fore.WHITE, "금": Fore.LIGHTYELLOW_EX, "은": Fore.LIGHTCYAN_EX
+    rich_colors = {
+        "검정": "black", "갈색": "bright_black", "빨강": "red", "주황": "bright_red", 
+        "노랑": "yellow", "초록": "green", "파랑": "blue", "보라": "magenta", 
+        "회색": "bright_white", "흰색": "white", "금": "bright_yellow", "은": "cyan"
     }
     
-    print("사용 가능한 색상: ")
-    for color in color_codes.keys():
-        print(f"{color_styles[color]}{color}{Style.RESET_ALL}", end=" ")
-    print("금 은")
+    console.print("사용 가능한 색상:")
+    color_list = [Text(color, style=rich_colors[color]) for color in color_codes.keys()]
+    console.print(*color_list, Text("금", style="bright_yellow"), Text("은", style="cyan"))
     
-    band_count = input("\n저항기의 색 띠 개수를 입력하세요 (4 또는 5): ")
+    colors = input("\n저항기의 색상을 공백으로 구분하여 입력하세요 (4개 또는 5개): ").split()
     
-    if band_count not in ["4", "5"]:
-        return "잘못된 입력입니다. 4 또는 5를 입력하세요."
+    if len(colors) not in [4, 5]:
+        return "잘못된 입력입니다. 4개 또는 5개의 색상을 입력하세요."
     
-    band_count = int(band_count)
-    colors = input(f"저항기의 {band_count}개 색상을 공백으로 구분하여 입력하세요: ").split()
-    
-    if len(colors) != band_count:
-        return "입력한 색상 개수가 올바르지 않습니다."
+    band_count = len(colors)
     
     try:
-        colored_input = " ".join([color_styles.get(color, "") + color + Style.RESET_ALL for color in colors])
-        print(f"입력된 색상: {colored_input}")
+        colored_input = Text()
+        for color in colors:
+            colored_input.append(f"{color} ", style=rich_colors.get(color, "white"))
+        console.print(f"입력된 색상: {colored_input}")
         
         if band_count == 4:
             value = (color_codes[colors[0]] * 10 + color_codes[colors[1]]) * multiplier_codes[colors[2]]
@@ -57,12 +57,25 @@ def resistor_value():
             value = (color_codes[colors[0]] * 100 + color_codes[colors[1]] * 10 + color_codes[colors[2]]) * multiplier_codes[colors[3]]
             tolerance = tolerance_codes.get(colors[4], None)
         
-        formatted_value = format_resistance(value)
-        if tolerance:
-            return f"저항값: {formatted_value} ±{tolerance}%"
-        return f"저항값: {formatted_value}"
+        formatted_value, unit = format_resistance(value)
+        if tolerance is not None:
+            console.print(f"저항값: [bold cyan]{formatted_value}[/bold cyan] ±{tolerance}%")
+        else:
+            console.print(f"저항값: [bold cyan]{formatted_value}[/bold cyan]")
+        
+        measured_value = float(input(f"실제 측정된 저항값을 입력하세요 ({unit} 단위): "))
+        measured_value *= 1_000_000 if unit == "MΩ" else 1_000 if unit == "kΩ" else 1
+        
+        error = calculate_tolerance(value, measured_value)
+        console.print(f"측정값: [bold green]{format_resistance(measured_value)[0]}[/bold green]")
+        console.print(f"오차율: [bold red]{error:.2f}%[/bold red]")
+        
+        return "계산 완료"
+        
     except KeyError:
         return "유효하지 않은 색상이 포함되어 있습니다."
-    
+    except ValueError:
+        return "잘못된 입력입니다. 숫자를 입력하세요."
+
 # 실행 예시
 print(resistor_value())
