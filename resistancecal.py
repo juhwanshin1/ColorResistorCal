@@ -46,11 +46,12 @@ def resistor_value():
     
     try:
         # 색상을 입력받을 때 색상에 맞는 스타일 적용
-        colored_input = Text()
+        colored_input = ""
         for color in colors:
-            colored_input.append(f"{color} ", style=rich_colors.get(color, "white"))
+            colored_input += f"[{rich_colors.get(color, 'white')}] {color}[/] "
         
-        console.print(f"입력된 색상: {colored_input}")  # 색상 적용된 텍스트 출력
+        # 색상이 제대로 적용되도록 수정
+        console.print(f"[bold]입력된 색상: {colored_input}[/bold]")  # 스타일 적용된 텍스트 출력
         
         if band_count == 4:
             value = (color_codes[colors[0]] * 10 + color_codes[colors[1]]) * multiplier_codes[colors[2]]
